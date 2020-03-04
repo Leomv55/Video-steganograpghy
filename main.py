@@ -85,7 +85,7 @@ def main():
     frame_extraction("./rain_132.mp4")
     encode_string(input_string)
     make_video("./tmp/","output.avi")
-    clean_tmp()
+    # clean_tmp()
 
 if __name__ == "__main__":
     main()
