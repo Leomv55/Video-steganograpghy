@@ -1,7 +1,7 @@
 from stegano import lsb
 from os.path import isfile,join
 
-import time                                                                 #install time ,opencv,numpy modules
+import time                                                                
 import cv2
 import numpy as np
 import math
@@ -25,33 +25,39 @@ def split_string(s_str,count=10):
         split_list.append(out_str)
     return split_list
 
-def frame_extraction(video_path="input.mp4",root="./tmp/"):
-    p_thres=0
-    if not os.path.exists("./tmp"):
-        os.makedirs("tmp")
+def frame_extraction(video_path="input.mp4",temp_path="./tmp/"):
+    if not os.path.exists(temp_path):
+        os.makedirs(temp_path)
         print("[INFO] tmp directory is created")
+    else:
+        clean_tmp(temp_path)
+        os.makedirs(temp_path)
     cap = cv2.VideoCapture(video_path)
-    ret, prev_frame = cap.read()
+    # ret, prev_frame = cap.read()
     count=0
-    while ret:
+    while True:
         ret, curr_frame = cap.read()
         if ret:
-            diff = cv2.absdiff(curr_frame, prev_frame)
-            non_zero_count = np.count_nonzero(diff)
-            if non_zero_count > p_thres:
-                cv2.imwrite("{}frame{}.jpg".format(root,count), curr_frame)           # frames extracted
-                count+=1
-            prev_frame = curr_frame
+            cv2.imwrite("{}frame{}.jpg".format(temp_path,count), curr_frame)           # frames extracted
+            count+=1
+        else:
+            break
     print("[INFO] Total number of Frames obtained: {}".format(count))
+    return count
 
-def encode_string(input_string,root="./tmp/"):
+def encode_string(input_string,total_frames,temp_path="./tmp/"):
     split_string_list=split_string(input_string)
-    for i in range(0,len(split_string_list)):
-        f_name="{}frame{}.jpg".format(root,i)
-        secret_enc=lsb.hide(f_name,split_string_list[i])
-        secret_enc.save(f_name)
-        print("[INFO] frame {} holds {}".format(f_name,split_string_list[i]))
-
+    index=0
+    for i in range(0,total_frames):
+        try:
+            if i%10==0:
+                f_name="{}frame{}.jpg".format(temp_path,i)
+                secret_enc=lsb.hide(f_name,split_string_list[index])
+                secret_enc.save(f_name)
+                print("[INFO] frame {} holds {}".format(f_name,split_string_list[index]))
+                index+=1
+        except:
+            break
 def make_video(pathIn="./tmp/",pathOut="video.avi"):
     fps = 30
     frame_array = []
@@ -75,17 +81,17 @@ def make_video(pathIn="./tmp/",pathOut="video.avi"):
     out.release()
     print("[INFO] The encoded video is made named {}".format(pathOut))
 
-def clean_tmp(path="./tmp"):
-    if os.path.exists(path):
-        shutil.rmtree(path)
+def clean_tmp(temp_path="./tmp"):
+    if os.path.exists(temp_path):
+        shutil.rmtree(temp_path)
         print("[INFO] tmp files are cleaned up")
 
 def main():
     input_string = input("Enter the input string :")
-    frame_extraction("./rain_132.mp4")
-    encode_string(input_string)
+    total_frames=frame_extraction("./rain_132.mp4")
+    encode_string(input_string,total_frames)
     make_video("./tmp/","output.avi")
-    # clean_tmp()
+    clean_tmp()
 
 if __name__ == "__main__":
     main()
