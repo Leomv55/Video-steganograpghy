@@ -7,7 +7,10 @@ import numpy as np
 import math
 import os
 import shutil
+import subprocess
+import os
 
+from moviepy.editor import *
 
 def split_string(s_str,count=10):
     per_c=math.ceil(len(s_str)/count)
@@ -58,28 +61,38 @@ def encode_string(input_string,total_frames,temp_path="./tmp/"):
                 index+=1
         except:
             break
-def make_video(pathIn="./tmp/",pathOut="video.avi"):
+def make_video(pathIn="./tmp",pathOut="video.avi"):
     fps = 30
-    frame_array = []
-    files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]#for sorting the file names properly
-    files.sort(key = lambda x: x[5:-4])
-    files.sort()
+    # frame_array = []
+    # files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]#for sorting the file names properly
+    # files.sort(key =lambda x: x[5:-4])
     
-    for i in range(len(files)):
-        filename=pathIn + files[i]
-        #reading each files
-        img = cv2.imread(filename)
-        height, width, layers = img.shape
-        size = (width,height)
+    # for i in range(len(files)):
+    #     filename=pathIn + files[i]
+    #     #reading each files
+    #     img = cv2.imread(filename)
+    #     height, width, layers = img.shape
+    #     size = (width,height)
     
-        #inserting the frames into an image array
-        frame_array.append(img)
-    out = cv2.VideoWriter(pathOut,cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
-    for i in range(len(frame_array)):
-        # writing to a image array
-        out.write(frame_array[i])
-    out.release()
+    #     #inserting the frames into an image array
+    #     frame_array.append(img)
+    # out = cv2.VideoWriter(pathOut,cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+    # for i in range(len(frame_array)):
+    #     # writing to a image array
+    #     out.write(frame_array[i])
+    # cv2.destroyAllWindows()
+    # out.release()
+    os.chdir(pathIn)
+    subprocess.call("ffmpeg -r {} -i \"frame%d.jpg\" -vb 20M -vcodec mpeg4 {}".format(fps,pathOut),shell=True)
     print("[INFO] The encoded video is made named {}".format(pathOut))
+    os.chdir("../")
+    
+
+def integrate_audio_video(video_path_original="rain_132.mp4",encoded_video_path="./tmp/output.avi"):
+    original_video = VideoFileClip(encoded_video_path)
+    encoded_video = original_video.set_audio(VideoFileClip(video_path_original).audio)
+    encoded_video.write_videofile("final.mp4")
+    print("[INFO] Integration completed")
 
 def clean_tmp(temp_path="./tmp"):
     if os.path.exists(temp_path):
@@ -87,10 +100,13 @@ def clean_tmp(temp_path="./tmp"):
         print("[INFO] tmp files are cleaned up")
 
 def main():
+    
+    ORIGINAL_VIDEO_FILE="Wildlife.mp4"
     input_string = input("Enter the input string :")
-    total_frames=frame_extraction("./rain_132.mp4")
+    total_frames=frame_extraction(ORIGINAL_VIDEO_FILE)
     encode_string(input_string,total_frames)
     make_video("./tmp/","output.avi")
+    integrate_audio_video(video_path_original=ORIGINAL_VIDEO_FILE)
     clean_tmp()
 
 if __name__ == "__main__":

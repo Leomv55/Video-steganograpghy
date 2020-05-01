@@ -9,6 +9,7 @@ verify_ssl = true
 stegano = "*"
 numpy = "*"
 opencv-python = "*"
+moviepy = "*"
 
 [requires]
 python_version = "3.8"
