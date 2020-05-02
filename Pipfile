@@ -10,6 +10,8 @@ stegano = "*"
 numpy = "*"
 opencv-python = "*"
 moviepy = "*"
+pillow = "*"
+progressbar = "*"
 
 [requires]
 python_version = "3.8"
