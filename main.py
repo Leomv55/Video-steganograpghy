@@ -8,10 +8,7 @@ import math
 import os
 import shutil
 import subprocess
-import os
 
-from moviepy.editor import *
-# from progressbar import Progressbar,Percentage,Bar
 
 def split_string(s_str,count=10):
     per_c=math.ceil(len(s_str)/count)
@@ -44,8 +41,6 @@ def frame_extraction(video_path="input.mp4",temp_path="./tmp/"):
         if ret:
             f_name = "{}frame{}.png".format(temp_path,count)
             cv2.imwrite(f_name, curr_frame)           # frames extracted
-            # jpg_to_png = Image.open(f_name)
-            # jpg_to_png.save("{}frame{}.png".format(temp_path,count))
             count+=1
         else:
             break
@@ -75,8 +70,6 @@ def decode_string(video_p="final.mp4",temp_p="./tmp/"):
         secret = lsb.reveal(f_name)
         if secret is not None:
             decoded_string += secret
-        # pbar.update(f)
-    # pbar.finish()
     return decoded_string
     
 def make_video(pathIn="./tmp",pathOut="video.avi"):
