@@ -8,7 +8,7 @@ import math
 import os
 import shutil
 import subprocess
-
+import argparse
 
 def split_string(s_str,count=10):
     per_c=math.ceil(len(s_str)/count)
@@ -64,15 +64,16 @@ def encode_string(input_string,total_frames,temp_path="./tmp/"):
 
 def decode_string(video_p="final.mp4",temp_p="./tmp/"):
     decoded_string =  ""
+    print("Please wait till all frames is being scaned this may take minutes to hours... ")
     total = frame_extraction(video_path=video_p,temp_path=temp_p)
-    for f in range(0,20):
+    for f in range(0,total):
         f_name="{}frame{}.png".format(temp_p,f)
         secret = lsb.reveal(f_name)
         if secret is not None:
             decoded_string += secret
     return decoded_string
     
-def make_video(pathIn="./tmp",pathOut="video.avi"):
+def make_video(pathIn="./tmp/",pathOut="video.avi"):
     fps = 30
     os.chdir(pathIn)
     subprocess.call("ffmpeg -r {} -i \"frame%d.png\"  -c:v huffyuv {}".format(fps,pathOut),shell=True)
@@ -80,9 +81,11 @@ def make_video(pathIn="./tmp",pathOut="video.avi"):
     os.chdir("../")
     
 
-def integrate_audio_video(encoded_video_path="output.avi",audio_path="default.aac"):
-    command = "ffmpeg -i {} -i {} -codec copy -shortest {}".format(encoded_video_path,audio_path,"final.avi")
+def integrate_audio_video(encoded_video_path="output.avi",audio_path="default.aac",destination="final.avi"):
+    command = "ffmpeg -i {} -i {} -codec copy -shortest {}".format(encoded_video_path,audio_path,destination)
     subprocess.call(command,shell=True)
+    os.remove(audio_path)
+    os.remove(encoded_video_path)
     print("[INFO] Integration completed")
 
 def get_audio(video_path = "output.avi" ,output_audio_path="default.aac"):
@@ -96,19 +99,62 @@ def clean_tmp(temp_path="./tmp"):
         print("[INFO] tmp files are cleaned up")
 
 def main():
+    parser = argparse.ArgumentParser(description="Command-line tool for video steganography")
+    parser.add_argument('-es','--encode-string',metavar='S',type=str,help='string for encryption')
+    parser.add_argument('-s','--source',metavar='U',type=str,help='source for video path')
+    parser.add_argument('-d','--destination',metavar='D',nargs="?",const="final.avi",type=str,help='destination for video path')
+    parser.add_argument('--encryption',action='store_true',help="for encryption")
+    arg_dict = parsed_dict(parser)
     
-    ORIGINAL_VIDEO_FILE="Wildlife.mp4"
+    if arg_dict['encryption']:
+        #Encryption
+        if arg_dict['encode_string'] is None:
+            parser.print_usage()
+            parser.exit(status=1,message="encode string is required in encryption\n")
+        elif arg_dict['source'] is None:
+            parser.print_usage()
+            parser.exit(status=1,message="source should be specified for encryption\n")
+        clean_tmp()
+        total_frames=frame_extraction(arg_dict['source'])
+        encode_string(arg_dict['encode_string'],total_frames)
+        make_video("./tmp/","../output.avi")
+        get_audio(video_path=arg_dict['source'])
+        integrate_audio_video(destination=arg_dict['destination'])
+        clean_tmp()
+    else:
+        #Decryption
+        if arg_dict['encode_string'] is not None or arg_dict['destination'] is not None:
+            parser.print_usage()
+            parser.exit(status=1,message="-es / -d is not required for decryption\n")
+        elif arg_dict['source'] is None:
+            parser.print_usage()
+            parser.exit(status=1,message="-s is required for decryption\n")            
+        clean_tmp()
+        print("Decoded string: "+decode_string(video_p=arg_dict['source']))
+        clean_tmp()
 
-    input_string = input("Enter the input string :")
-    total_frames=frame_extraction(ORIGINAL_VIDEO_FILE)
-    encode_string(input_string,total_frames)
-    make_video("./tmp/","../output.avi")
-    get_audio(video_path=ORIGINAL_VIDEO_FILE)
-    integrate_audio_video()
-    clean_tmp()
+    # ORIGINAL_VIDEO_FILE="Wildlife.mp4"
+
+    # input_string = input("Enter the input string :")
+    # total_frames=frame_extraction(ORIGINAL_VIDEO_FILE)
+    # encode_string(input_string,total_frames)
+    # make_video("./tmp/","../output.avi")
+    # get_audio(video_path=ORIGINAL_VIDEO_FILE)
+    # integrate_audio_video()
+    # clean_tmp()
 
     # print(decode_string(video_p="final.avi"))
     # clean_tmp()
+def parsed_dict(parser):
+    return parser.parse_args().__dict__
+
 
 if __name__ == "__main__":
     main()
+
+
+# Encryption example
+# python main.py -es "leo is good" -s /home/leo/Projects/steganography/Wildlife.mp4 -d ./final.avi --encryption
+
+# Decryption example
+# python main.py -s final.avi
